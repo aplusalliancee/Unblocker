@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <title>Unblocker</title>
+    <link rel="shortcut icon" content="favicon.webp" />
+    <link rel="stylesheet" href="index.css" />
+    <script src="/scram/scramjet.all.js"></script>
+    <script src="baremux/index.js" defer></script>
+    <script src="epoxy/index.js" defer></script>
+    <script src="register-sw.js" defer></script>
+    <script src="search.js" defer></script>
+    <script src="index.js" defer></script>
+
+    <style>
+        /* ===== DARK MODE + ANIMATED GRADIENT ===== */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(-45deg, #0f0f1a, #131324, #1a1a2e, #0d0d1b);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            color: #e0e0ff;
+            min-height: 100vh;
+            overflow: hidden;
+            text-align: center; /* global centering fallback */
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ===== LOGIN SCREEN ===== */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(10px);
+            background: rgba(10, 10, 20, 0.75);
+        }
+
+        #login-box {
+            background: rgba(20, 20, 35, 0.85);
+            backdrop-filter: blur(12px);
+            padding: 40px 35px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(100, 100, 140, 0.2);
+            width: 340px;
+            max-width: 90%;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        #login-box h2 {
+            margin: 0 0 28px;
+            font-size: 28px;
+            color: #d0d0ff;
+            font-weight: 600;
+        }
+
+        #login-box input {
+            width: 90%;
+            padding: 14px 16px;
+            margin: 12px 0;
+            border: 1px solid rgba(100, 100, 140, 0.4);
+            border-radius: 10px;
+            background: rgba(30, 30, 50, 0.7);
+            color: #e0e0ff;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        #login-box input::placeholder { color: rgba(160, 160, 200, 0.7); }
+
+        #login-box input:focus {
+            border-color: #6a8cff;
+            background: rgba(40, 40, 70, 0.9);
+            box-shadow: 0 0 15px rgba(106, 140, 255, 0.35);
+        }
+
+        #login-btn {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6a8cff, #4a6ce0);
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(106, 140, 255, 0.4);
+        }
+
+        #login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(106, 140, 255, 0.6);
+        }
+
+        #login-error {
+            color: #ff7070;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        /* ===== TOP-RIGHT CONTROLS ===== */
+        #top-controls {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 10000;
+            display: none;
+            flex-direction: row;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #search-wrapper {
+            background: rgba(20, 20, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 12px;
+            padding: 6px 10px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+            width: 220px;
+            transition: all 0.3s ease;
+        }
+
+        #search-wrapper:hover {
+            background: rgba(30, 30, 50, 0.9);
+        }
+
+        #sj-form-top { display: flex; align-items: center; }
+
+        #sj-address-top {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 14px;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            color: #e0e0ff;
+            outline: none;
+        }
+
+        #sj-address-top::placeholder { color: rgba(160,160,200,0.7); }
+        #sj-address-top:focus { background: rgba(40,40,70,0.6); }
+
+        #home-toggle, #home-btn, #logout-btn {
+            background: rgba(20, 20, 35, 0.7);
+            backdrop-filter: blur(8px);
+            border: none;
+            color: #e0e0ff;
+            font-size: 1.3rem;
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+            min-width: 44px;
+            text-align: center;
+        }
+
+        #home-toggle:hover, #home-btn:hover, #logout-btn:hover {
+            background: rgba(30, 30, 50, 0.9);
+            transform: translateY(-1px);
+        }
+
+        #home-btn {
+            background: linear-gradient(135deg, #6a8cff, #4a6ce0);
+            font-size: 1rem;
+            padding: 8px 16px;
+            display: none;
+        }
+
+        #logout-btn {
+            background: linear-gradient(135deg, #ff7070, #d94a4a);
+            font-size: 1rem;
+            padding: 8px 16px;
+            display: none;
+        }
+
+        /* ===== MAIN CONTENT ===== */
+        #real-content {
+            display: none;
+            padding: 20px;
+            min-height: 100vh;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .flex-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-wrapper.header-center {
+            text-align: center;
+            margin: 60px 0 16px;
+        }
+
+        .logo {
+            height: 80px;
+        }
+
+        .title-group {
+            text-align: center;
+        }
+
+        .title-group h1 {
+            font-size: 3.2rem;
+            color: #d0d0ff;
+            margin: 0;
+        }
+
+        .title-group .byline {
+            font-size: 1.2rem;
+            color: #a0a0d0;
+            margin-top: 6px;
+            font-weight: 400;
+        }
+
+        .desc {
+            max-width: 640px;
+            margin: 0 auto 40px;
+            color: #b0b0d0;
+            line-height: 1.6;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        #sj-form {
+            max-width: 640px;
+            margin: 0 auto 24px;
+            display: none;
+        }
+
+        #sj-address {
+            width: 100%;
+            padding: 16px 20px;
+            font-size: 1.1rem;
+            background: rgba(30,30,50,0.7);
+            border: 1px solid rgba(100,100,140,0.4);
+            border-radius: 12px;
+            color: #e0e0ff;
+            outline: none;
+            text-align: center;
+        }
+
+        #sj-address:focus {
+            border-color: #6a8cff;
+            box-shadow: 0 0 0 3px rgba(106,140,255,0.3);
+        }
+
+        #sj-error, #sj-error-code {
+            color: #ff7070;
+            text-align: center;
+            font-family: monospace;
+            margin: 16px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div id="login-box">
+            <h2>Unblocker</h2>
+            <input type="text" id="login-user" placeholder="Username" />
+            <input type="password" id="login-pass" placeholder="Password" />
+            <button id="login-btn">Enter</button>
+            <div id="login-error"></div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="real-content">
+
+        <!-- Top-right controls -->
+        <div id="top-controls">
+            <div id="search-wrapper">
+                <form id="sj-form-top">
+                    <input id="sj-search-engine-top" value="https://www.google.com/search?q=%s" type="hidden" />
+                    <input id="sj-address-top" type="text" placeholder="Search..." autocomplete="off" />
+                </form>
+            </div>
+
+            <button id="home-toggle" title="Toggle Menu">☰</button>
+            <button id="home-btn" title="Back to Home">Home</button>
+            <button id="logout-btn" title="Logout">Logout</button>
+        </div>
+
+        <!-- Centered title with subtitle -->
+        <div class="flex-center logo-wrapper header-center">
+            <img class="logo" src="sj.png" alt="Scramjet" />
+            <div class="title-group">
+                <h1>Unblocker</h1>
+                <div class="byline">by A Plus Alliance</div>
+            </div>
+        </div>
+
+        <div class="desc">
+            <p>Unblocker By A Plus Alliance is a proxy designed to break through internet censorship and give everyone the freedom to browse openly.<br>Search by clicking the menu button.</p>
+        </div>
+
+        <!-- Hidden original form -->
+        <form id="sj-form" class="flex-center" style="display:none;">
+            <input id="sj-search-engine" value="https://www.google.com/search?q=%s" type="hidden" />
+            <input id="sj-address" type="text" placeholder="Search the web freely" />
+        </form>
+
+        <div class="desc">
+            <p id="sj-error"></p>
+            <pre id="sj-error-code"></pre>
+        </div>
+    </div>
+
+    <script>
+        // ========== USER ACCOUNTS ==========
+        const accounts = {
+            "alliance": "1234",
+            "a": "a",
+        };
+
+        // ========== LOGIN LOGIC ==========
+        document.getElementById("login-btn").onclick = () => {
+            const u = document.getElementById("login-user").value.trim();
+            const p = document.getElementById("login-pass").value;
+            if (accounts[u] && accounts[u] === p) {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("real-content").style.display = "block";
+                document.getElementById("top-controls").style.display = "flex";
+                document.getElementById("home-btn").style.display = "block";
+                document.getElementById("logout-btn").style.display = "block";
+                sessionStorage.setItem("scramjet_logged_in", "true");
+                history.replaceState({ loggedIn: true }, '', location.pathname);
+            } else {
+                document.getElementById("login-error").textContent = "Invalid credentials.";
+            }
+        };
+
+        // ========== HOME & LOGOUT & TOGGLE ==========
+        const homeBtn = document.getElementById("home-btn");
+        const logoutBtn = document.getElementById("logout-btn");
+        const toggleBtn = document.getElementById("home-toggle");
+
+        homeBtn.onclick = () => {
+            if (sessionStorage.getItem("scramjet_logged_in") === "true") {
+                location.reload();
+            }
+        };
+
+        logoutBtn.onclick = () => {
+            sessionStorage.removeItem("scramjet_logged_in");
+            document.getElementById("real-content").style.display = "none";
+            document.getElementById("top-controls").style.display = "none";
+            document.getElementById("login-screen").style.display = "flex";
+            document.getElementById("login-user").value = "";
+            document.getElementById("login-pass").value = "";
+            document.getElementById("login-error").textContent = "";
+        };
+
+        toggleBtn.onclick = () => {
+            const isVisible = homeBtn.style.display === "block";
+            homeBtn.style.display = isVisible ? "none" : "block";
+            logoutBtn.style.display = isVisible ? "none" : "block";
+            document.getElementById("search-wrapper").style.display = isVisible ? "none" : "block";
+            toggleBtn.style.transform = isVisible ? "translateX(0)" : "translateX(-8px)";
+            setTimeout(() => {
+                toggleBtn.style.transform = "translateX(0)";
+            }, 200);
+        };
+
+        // ========== PERSIST LOGIN ==========
+        window.addEventListener("pageshow", (e) => {
+            if (sessionStorage.getItem("scramjet_logged_in") === "true") {
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("real-content").style.display = "block";
+                document.getElementById("top-controls").style.display = "flex";
+                document.getElementById("home-btn").style.display = "block";
+                document.getElementById("logout-btn").style.display = "block";
+            }
+        });
+
+        // ========== Enter key to login ==========
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && document.getElementById("login-screen").style.display !== "none") {
+                document.getElementById("login-btn").click();
+            }
+        });
+
+        // ========== Top search bar sync ==========
+        document.getElementById("sj-address-top").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                document.getElementById("sj-address").value = this.value;
+                document.getElementById("sj-form").dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+            }
+        });
+    </script>
+</body>
+</html>
